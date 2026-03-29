@@ -4,9 +4,6 @@ import path from 'path'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
-  define: {
-    'global': 'globalThis',
-  },
   plugins: [
     react(),
     VitePWA({
@@ -37,6 +34,9 @@ export default defineConfig({
   },
   build: {
     sourcemap: true,
+    commonjsOptions: {
+      transformMixedEsModules: true,
+    },
     rollupOptions: {
       output: {
         manualChunks: {
@@ -47,4 +47,11 @@ export default defineConfig({
       },
     },
   },
+  optimizeDeps: {
+    esbuildOptions: {
+      define: {
+        global: 'globalThis'
+      }
+    }
+  }
 })
