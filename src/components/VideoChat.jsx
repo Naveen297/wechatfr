@@ -37,9 +37,28 @@ const VideoChat = ({ roomId, isEnglish, onConnectionChange }) => {
         }
 
         // Connect to socket
-        socketRef.current = io(BACKEND_URL);
+        socketRef.current = io(BACKEND_URL, {
+          transports: ['websocket', 'polling'],
+          reconnection: true,
+          reconnectionAttempts: 5,
+          reconnectionDelay: 1000,
+        });
+
+        socketRef.current.on('connect', () => {
+          console.log('✅ Connected to signaling server');
+        });
+
+        socketRef.current.on('disconnect', (reason) => {
+          console.log('⚠️ Disconnected from server:', reason);
+        });
+
+        socketRef.current.on('connect_error', (error) => {
+          console.error('❌ Connection error:', error);
+          alert('Unable to connect to server. Please check your internet connection.');
+        });
 
         // Emit join-room event
+        console.log('📡 Joining room:', roomId);
         socketRef.current.emit('join-room', roomId, userIdRef.current);
 
         // Handle other users already in room
@@ -137,13 +156,33 @@ const VideoChat = ({ roomId, isEnglish, onConnectionChange }) => {
       stream,
       config: {
         iceServers: [
+          // Google STUN servers
           { urls: 'stun:stun.l.google.com:19302' },
           { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          // Free TURN servers from Metered.ca
+          {
+            urls: 'turn:a.relay.metered.ca:80',
+            username: 'b8c4b0f0a3f0f3f3d3f3f3f3',
+            credential: 'SomeRandomCredential',
+          },
+          {
+            urls: 'turn:a.relay.metered.ca:443',
+            username: 'b8c4b0f0a3f0f3f3d3f3f3f3',
+            credential: 'SomeRandomCredential',
+          },
+          {
+            urls: 'turn:a.relay.metered.ca:443?transport=tcp',
+            username: 'b8c4b0f0a3f0f3f3d3f3f3f3',
+            credential: 'SomeRandomCredential',
+          },
         ],
+        iceTransportPolicy: 'all',
       },
     });
 
     peer.on('signal', (signal) => {
+      console.log('Sending offer to:', userToSignal);
       socketRef.current.emit('offer', {
         target: userToSignal,
         caller: callerId,
@@ -152,14 +191,25 @@ const VideoChat = ({ roomId, isEnglish, onConnectionChange }) => {
     });
 
     peer.on('stream', (remoteStream) => {
-      console.log('Received remote stream');
+      console.log('✅ Received remote stream from peer');
       if (peerVideo.current) {
         peerVideo.current.srcObject = remoteStream;
       }
+      setIsConnected(true);
+      if (onConnectionChange) onConnectionChange(true);
+    });
+
+    peer.on('connect', () => {
+      console.log('✅ Peer connection established');
+    });
+
+    peer.on('close', () => {
+      console.log('⚠️ Peer connection closed');
     });
 
     peer.on('error', (err) => {
-      console.error('Peer error:', err);
+      console.error('❌ Peer connection error:', err);
+      alert(`Connection error: ${err.message}. Please try refreshing the page.`);
     });
 
     return peer;
@@ -173,13 +223,33 @@ const VideoChat = ({ roomId, isEnglish, onConnectionChange }) => {
       stream,
       config: {
         iceServers: [
+          // Google STUN servers
           { urls: 'stun:stun.l.google.com:19302' },
           { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          // Free TURN servers from Metered.ca
+          {
+            urls: 'turn:a.relay.metered.ca:80',
+            username: 'b8c4b0f0a3f0f3f3d3f3f3f3',
+            credential: 'SomeRandomCredential',
+          },
+          {
+            urls: 'turn:a.relay.metered.ca:443',
+            username: 'b8c4b0f0a3f0f3f3d3f3f3f3',
+            credential: 'SomeRandomCredential',
+          },
+          {
+            urls: 'turn:a.relay.metered.ca:443?transport=tcp',
+            username: 'b8c4b0f0a3f0f3f3d3f3f3f3',
+            credential: 'SomeRandomCredential',
+          },
         ],
+        iceTransportPolicy: 'all',
       },
     });
 
     peer.on('signal', (signal) => {
+      console.log('Sending answer to:', callerId);
       socketRef.current.emit('answer', {
         target: callerId,
         answerer: socketRef.current.id,
@@ -188,14 +258,25 @@ const VideoChat = ({ roomId, isEnglish, onConnectionChange }) => {
     });
 
     peer.on('stream', (remoteStream) => {
-      console.log('Received remote stream');
+      console.log('✅ Received remote stream from peer');
       if (peerVideo.current) {
         peerVideo.current.srcObject = remoteStream;
       }
+      setIsConnected(true);
+      if (onConnectionChange) onConnectionChange(true);
+    });
+
+    peer.on('connect', () => {
+      console.log('✅ Peer connection established');
+    });
+
+    peer.on('close', () => {
+      console.log('⚠️ Peer connection closed');
     });
 
     peer.on('error', (err) => {
-      console.error('Peer error:', err);
+      console.error('❌ Peer connection error:', err);
+      alert(`Connection error: ${err.message}. Please try refreshing the page.`);
     });
 
     peer.signal(incomingSignal);
@@ -237,7 +318,7 @@ const VideoChat = ({ roomId, isEnglish, onConnectionChange }) => {
       </div>
 
       {/* Your Video - Picture-in-Picture at Top Right */}
-      <div className="absolute top-4 right-4 w-48 h-36 md:w-64 md:h-48 lg:w-80 lg:h-60 bg-gray-900 rounded-xl shadow-2xl overflow-hidden border-2 border-white/20 hover:border-pink-500 transition-all duration-300 z-10">
+      <div className="absolute top-2 right-2 w-24 h-32 sm:w-32 sm:h-40 md:w-48 md:h-36 lg:w-64 lg:h-48 bg-gray-900 rounded-lg sm:rounded-xl shadow-2xl overflow-hidden border-2 border-white/20 hover:border-pink-500 transition-all duration-300 z-10">
         <video
           ref={userVideo}
           autoPlay
@@ -245,8 +326,8 @@ const VideoChat = ({ roomId, isEnglish, onConnectionChange }) => {
           muted
           className="w-full h-full object-cover"
         />
-        <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur px-2 py-1 rounded-md">
-          <span className="text-white text-xs font-semibold">
+        <div className="absolute bottom-1 left-1 bg-black/70 backdrop-blur px-1.5 py-0.5 sm:px-2 sm:py-1 rounded">
+          <span className="text-white text-[10px] sm:text-xs font-semibold">
             {isEnglish ? 'You' : 'Ви'}
           </span>
         </div>

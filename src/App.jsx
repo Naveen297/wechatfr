@@ -233,20 +233,20 @@ function App() {
         </div>
       </div>
 
-      {/* Main Content Area - Side by Side Layout - Full Screen */}
-      <div className="flex flex-col lg:flex-row gap-2 flex-1 p-2 overflow-hidden">
-        {/* Chat Section - Left Side (25%) */}
-        <div className="w-full lg:w-[25%] h-full overflow-hidden">
-          <Chat roomId={roomId} isEnglish={isEnglish} isConnected={isConnected} />
-        </div>
-
-        {/* Video Section - Right Side (75%) */}
-        <div className="flex-1 h-full rounded-xl overflow-hidden shadow-2xl">
+      {/* Main Content Area - Responsive Layout */}
+      <div className="flex flex-col md:flex-row gap-2 flex-1 p-2 overflow-hidden">
+        {/* Video Section - Full width on mobile, 70% on desktop */}
+        <div className="w-full md:w-[70%] h-[60%] md:h-full rounded-xl overflow-hidden shadow-2xl order-1 md:order-2">
           <VideoChat
             roomId={roomId}
             isEnglish={isEnglish}
             onConnectionChange={handleConnectionChange}
           />
+        </div>
+
+        {/* Chat Section - Bottom on mobile, left side (30%) on desktop */}
+        <div className="w-full md:w-[30%] h-[40%] md:h-full overflow-hidden order-2 md:order-1">
+          <Chat roomId={roomId} isEnglish={isEnglish} isConnected={isConnected} />
         </div>
       </div>
     </div>
