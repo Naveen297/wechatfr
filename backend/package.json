@@ -1,0 +1,17 @@
+{
+  "name": "wechat-backend",
+  "version": "1.0.0",
+  "description": "Video chat backend with WebRTC signaling",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "build": "echo 'No build step required for backend'"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.6.1",
+    "cors": "^2.8.5"
+  }
+}
